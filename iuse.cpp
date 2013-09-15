@@ -9,6 +9,7 @@
 #include "mutation.h"
 #include "player.h"
 #include "vehicle.h"
+#include "uistate.h"
 #include <sstream>
 #include <algorithm>
 
@@ -3007,7 +3008,7 @@ void iuse::granade_act(game *g, player *p, item *it, bool t)
                         const int zid = g->mon_at(pos.x + i, pos.y + j);
                         if (zid != -1 &&
                               (g->zombie(zid).type->species == species_insect ||
-                               g->zombie(zid).type->species == species_hallu) ) {
+                               g->zombie(zid).is_hallucination()) ) {
                             g->explode_mon(zid);
                         }
                     }
@@ -3832,10 +3833,10 @@ void iuse::portable_game(game *g, player *p, item *it, bool t)
         game_data.clear();
         int game_score = 0;
 
-        bool game_completed = play_videogame(loaded_software, game_data, game_score);
+        play_videogame(loaded_software, game_data, game_score);
 
         if ( game_data.find("end_message") != game_data.end() ) {
-            g->add_msg_if_player(p, _("%s"), game_data["end_message"].c_str() );
+            g->add_msg_if_player(p, "%s", game_data["end_message"].c_str() );
         }
 
         if ( game_score != 0 ) {
@@ -3939,6 +3940,7 @@ void iuse::knife(game *g, player *p, item *it, bool t)
     char ch;
  
     uimenu kmenu;
+    kmenu.selected = uistate.iuse_knife_selected;
     kmenu.text = _("Using knife:");
     kmenu.addentry( cut_fabric, true, -1, _("Cut up fabric/plastic/kevlar/wood") );
     kmenu.addentry( carve_writing, true, -1, _("Carve writing on item") );
@@ -3954,7 +3956,9 @@ void iuse::knife(game *g, player *p, item *it, bool t)
     kmenu.addentry( cancel, true, 'q', _("Cancel") );
     kmenu.query();
     choice = kmenu.ret;
-
+    if ( choice < cauterize ) {
+        uistate.iuse_knife_selected = choice;
+    }
 
     if ( choice == cauterize) {
         p->cauterize(g);
@@ -3972,7 +3976,7 @@ void iuse::knife(game *g, player *p, item *it, bool t)
     if (cut->type->id == "null") {
         g->add_msg(_("You do not have that item!"));
         return;
-    } else if ( p->has_weapon_or_armor(cut->invlet) && menu(true, _("You're wearing that, are you sure?"), _("Yes"), _("No") ) != 1 ) {
+    } else if ( p->has_weapon_or_armor(cut->invlet) && menu(true, _("You're wearing that, are you sure?"), _("Yes"), _("No"), NULL ) != 1 ) {
         return;       
     }
 

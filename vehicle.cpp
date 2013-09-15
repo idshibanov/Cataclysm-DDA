@@ -278,8 +278,8 @@ void vehicle::init_state(game* g, int init_veh_fuel, int init_veh_status)
 void vehicle::smash()
 {
   for (int part_index = 0; part_index < parts.size(); part_index++) {
-    //Drop by 10-100% of max HP
-    int damage = (int) (dice(1, 10) * 0.1 * part_info(part_index).durability);
+    //Drop by 10-120% of max HP (anything over 100 = broken)
+    int damage = (int) (dice(1, 12) * 0.1 * part_info(part_index).durability);
     parts[part_index].hp -= damage;
     if(parts[part_index].hp < 0) {
       parts[part_index].hp = 0;
@@ -287,7 +287,7 @@ void vehicle::smash()
   }
 }
 
-std::string vehicle::use_controls()
+void vehicle::use_controls()
 {
  std::vector<vehicle_controls> options_choice;
  std::vector<uimenu_entry> options_message;
@@ -349,23 +349,22 @@ std::string vehicle::use_controls()
  int select=selectmenu.ret;
 // int select = menu_vec(true, "Vehicle controls", options_message);
 
- std::string message = "You did nothing!";
  if (select == UIMENU_INVALID)
-    return message;
+    return;
 
  switch(options_choice[select]) {
   case toggle_cruise_control:
    cruise_on = !cruise_on;
-   message = (cruise_on) ? _("Cruise control turned on") : _("Cruise control turned off");
+   g->add_msg((cruise_on) ? _("Cruise control turned on") : _("Cruise control turned off"));
    break;
   case toggle_lights:
    lights_on = !lights_on;
-   message = (lights_on) ? _("Headlights turned on") : _("Headlights turned off");
+   g->add_msg((lights_on) ? _("Headlights turned on") : _("Headlights turned off"));
    break;
   case toggle_turrets:
    if (++turret_mode > 1)
     turret_mode = 0;
-   message = (0 == turret_mode) ? _("Turrets: Disabled") : _("Turrets: Burst mode");
+   g->add_msg((0 == turret_mode) ? _("Turrets: Disabled") : _("Turrets: Burst mode"));
    break;
   case release_control:
    g->u.controlling_vehicle = false;
@@ -403,7 +402,6 @@ std::string vehicle::use_controls()
   case control_cancel:
    break;
  }
- return message;
 }
 
 vpart_info& vehicle::part_info (int index)
@@ -1627,7 +1625,7 @@ veh_collision vehicle::part_collision (int part, int x, int y, bool just_detect)
     if (g->m.has_flag_ter_or_furn (thin_obstacle, x, y))
     {
         collision_type = veh_coll_thin_obstacle; // some fence
-        mass2 = 20;
+        mass2 = 10;
 		e=0.30;
 		part_dens = 20;
     }
